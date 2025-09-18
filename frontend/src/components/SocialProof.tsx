@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 interface ActivityItem {
   user_name: string
@@ -46,6 +47,7 @@ interface SmartMessage {
   title: string
   message: string
   cta_text: string
+  cta_link?: string
   priority: number
   urgency: string
 }
@@ -218,6 +220,27 @@ export function SmartSocialProofBanner() {
     return null
   }
 
+  // Smart CTA link generation
+  const getCtaLink = () => {
+    if (currentMessage.cta_link) {
+      return currentMessage.cta_link
+    }
+    
+    // If the message is about a specific destination, link to it
+    if (currentMessage.destination_id) {
+      return `/destinations/${currentMessage.destination_id}`
+    }
+    
+    // Default to groups page for group-related CTAs
+    if (currentMessage.cta_text?.toLowerCase().includes('join') || 
+        currentMessage.cta_text?.toLowerCase().includes('group')) {
+      return '/groups'
+    }
+    
+    // Fallback to express interest
+    return '/express-interest'
+  }
+
   const urgencyStyles = {
     high: 'from-red-500 to-pink-500 text-white',
     medium: 'from-orange-500 to-yellow-500 text-white',
@@ -248,9 +271,14 @@ export function SmartSocialProofBanner() {
             ✕
           </button>
         </div>
-        <button className="mt-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium py-1 px-3 rounded text-sm transition-colors">
-          {currentMessage.cta_text}
-        </button>
+        {currentMessage.cta_text && (
+          <Link
+            href={getCtaLink()}
+            className="mt-3 inline-block bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium py-2 px-4 rounded text-sm transition-colors"
+          >
+            {currentMessage.cta_text}
+          </Link>
+        )}
       </div>
     </div>
   )

@@ -181,9 +181,9 @@ export default function HomePage() {
             </div>
             <p className="text-gray-400 mb-6">Travel together, save together</p>
             <div className="flex justify-center space-x-6 text-sm text-gray-400">
-              <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
-              <a href="/contact" className="hover:text-white transition-colors">Contact Us</a>
+              <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="/contact-us" className="hover:text-white transition-colors">Contact Us</a>
             </div>
           </div>
         </div>
