@@ -211,9 +211,9 @@ export default function DestinationDetailPage() {
           </div>
 
           {/* Right Column - Booking & Calendar */}
-          <div className="space-y-6">
+          <div className="lg:sticky lg:top-6 lg:self-start space-y-6">
             {/* Pricing Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border sticky top-6">
+            <div className="bg-white rounded-xl shadow-sm p-6 border">
               <div className="text-center mb-6">
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   ₹{destination.base_price.toLocaleString()}
@@ -255,13 +255,15 @@ export default function DestinationDetailPage() {
             </div>
 
             {/* Calendar */}
-            <CalendarView
-              calendarData={calendarData?.data}
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-              month={currentMonth}
-              onMonthChange={setCurrentMonth}
-            />
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+              <CalendarView
+                calendarData={calendarData?.data}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+                month={currentMonth}
+                onMonthChange={setCurrentMonth}
+              />
+            </div>
           </div>
         </div>
       </div>
