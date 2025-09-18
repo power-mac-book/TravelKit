@@ -4,20 +4,20 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 interface ActivityItem {
-  user_name: string
-  destination_name: string
-  destination_id: number
-  time_ago: string
-  action: string
-  timestamp: string
+  user_name?: string
+  destination_name?: string
+  destination_id?: number
+  time_ago?: string
+  action?: string
+  timestamp?: string
 }
 
 interface MomentumDestination {
-  destination_id: number
-  destination_name: string
-  recent_count: number
-  previous_count: number
-  momentum_score: number
+  destination_id?: number
+  destination_name?: string
+  recent_count?: number
+  previous_count?: number
+  momentum_score?: number
 }
 
 interface RealTimeActivity {
@@ -105,9 +105,10 @@ export function LiveActivityFeed() {
 
   useEffect(() => {
     const activeData = activity || mockActivity
-    if (activeData.activity_feed.length > 0) {
+    const activityFeed = activeData?.activity_feed || []
+    if (activityFeed.length > 0) {
       const interval = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % activeData.activity_feed.length)
+        setCurrentIndex((prev) => (prev + 1) % activityFeed.length)
       }, 4000) // Rotate every 4 seconds
       return () => clearInterval(interval)
     }
@@ -128,7 +129,12 @@ export function LiveActivityFeed() {
   }
 
   const activeData = activity || mockActivity
-  const currentActivity = activeData.activity_feed[currentIndex]
+  const activityFeed = activeData?.activity_feed || []
+  const currentActivity = activityFeed[currentIndex] || activityFeed[0] || {
+    user_name: 'Someone',
+    destination_name: 'a beautiful destination',
+    time_ago: '2 min ago'
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 h-full">
@@ -141,17 +147,17 @@ export function LiveActivityFeed() {
         <div className="text-gray-700 transition-opacity duration-500">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-              {currentActivity.user_name.charAt(0)}
+              {currentActivity.user_name?.charAt(0) || 'U'}
             </div>
             <div className="flex-1">
               <p className="text-sm leading-relaxed">
-                <span className="font-semibold text-indigo-600">{currentActivity.user_name}</span>
+                <span className="font-semibold text-indigo-600">{currentActivity.user_name || 'Someone'}</span>
                 {' '}expressed interest in{' '}
-                <span className="font-semibold text-gray-900">{currentActivity.destination_name}</span>
+                <span className="font-semibold text-gray-900">{currentActivity.destination_name || 'a destination'}</span>
               </p>
               <div className="text-xs text-gray-500 mt-1 flex items-center space-x-1">
                 <span>⏰</span>
-                <span>{currentActivity.time_ago}</span>
+                <span>{currentActivity.time_ago || '2 min ago'}</span>
               </div>
             </div>
           </div>
@@ -161,14 +167,14 @@ export function LiveActivityFeed() {
       <div className="mt-4 pt-4 border-t border-gray-100">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">
-            <span className="font-semibold text-indigo-600">{activeData.total_activity_count}</span> people active
+            <span className="font-semibold text-indigo-600">{activeData.total_activity_count || 0}</span> people active
           </span>
           <span className="text-xs text-gray-500">last 6 hours</span>
         </div>
         
         {/* Activity indicators */}
         <div className="flex space-x-1 mt-2">
-          {activeData.activity_feed.map((_, index) => (
+          {(activeData.activity_feed || []).map((_, index) => (
             <div
               key={index}
               className={`h-1 rounded-full transition-all duration-300 ${
@@ -290,17 +296,17 @@ export function TrendingDestinations() {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">
-                    {destination.name}
+                    {destination.name || 'Unknown Destination'}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {destination.social_proof.social_proof_text}
+                    {destination.social_proof?.social_proof_text || ''}
                   </div>
                 </div>
               </div>
               <div className="text-right ml-3">
                 <div className="flex items-center space-x-1">
                   <span className="text-sm font-bold text-orange-600">
-                    +{destination.recent_interest_count}
+                    +{destination.recent_interest_count || 0}
                   </span>
                   <span className="text-orange-400">↗</span>
                 </div>
