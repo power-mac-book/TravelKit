@@ -14,7 +14,7 @@ interface TravelerUser {
 interface TravelerContextType {
   user: TravelerUser | null;
   token: string | null;
-  login: (token: string) => void;
+  login: (token: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -69,10 +69,10 @@ export const TravelerProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
-  const login = (newToken: string) => {
+  const login = async (newToken: string) => {
     localStorage.setItem('traveler_token', newToken);
     setToken(newToken);
-    fetchUserProfile(newToken);
+    await fetchUserProfile(newToken);
   };
 
   const logout = () => {

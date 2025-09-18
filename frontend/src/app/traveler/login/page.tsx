@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useTraveler } from '@/contexts/TravelerContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
@@ -33,6 +34,14 @@ const loginTraveler = async (data: LoginFormData) => {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { login, user, loading } = useTraveler();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/traveler/dashboard');
+    }
+  }, [user, loading, router]);
 
   const {
     register,
@@ -42,11 +51,19 @@ export default function LoginPage() {
 
   const mutation = useMutation({
     mutationFn: loginTraveler,
-    onSuccess: (data) => {
-      // Store token in localStorage
-      localStorage.setItem('traveler_token', data.access_token);
-      toast.success('Login successful!');
-      router.push('/traveler/dashboard');
+    onSuccess: async (data) => {
+      try {
+        // Use the context login method to properly initialize user state
+        await login(data.access_token);
+        toast.success('Login successful! Redirecting to dashboard...');
+        
+        // Navigate to dashboard after successful login
+        router.push('/traveler/dashboard');
+      } catch (error) {
+        console.error('Error during login process:', error);
+        toast.error('Login successful but failed to load profile. Please refresh.');
+        router.push('/traveler/dashboard');
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -56,6 +73,20 @@ export default function LoginPage() {
   const onSubmit = (data: LoginFormData) => {
     mutation.mutate(data);
   };
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Don't render login form if user is already logged in (will redirect)
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
