@@ -29,9 +29,12 @@ export default function HomePage() {
               <button className="bg-white text-primary-600 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors">
                 Browse Destinations
               </button>
-              <button className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary-600 transition-colors">
+              <a 
+                href="/how-it-works"
+                className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary-600 transition-colors text-center"
+              >
                 How It Works
-              </button>
+              </a>
             </div>
           </div>
         </div>
