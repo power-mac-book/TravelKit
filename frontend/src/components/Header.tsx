@@ -42,9 +42,12 @@ export default function Header({ className = '' }: HeaderProps) {
 
           {/* CTA Button */}
           <div className="flex items-center space-x-4">
-            <button className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors">
+            <Link 
+              href="/express-interest"
+              className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
               Express Interest
-            </button>
+            </Link>
           </div>
         </div>
       </div>
