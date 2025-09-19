@@ -256,3 +256,72 @@ async def bulk_recalculate_pricing(
         "message": f"Pricing recalculated for {updated_count} groups",
         "updated_count": updated_count
     }
+
+
+# ===== TESTING ENDPOINTS =====
+
+@router.post("/{group_id}/send-confirmations")
+async def send_group_confirmations(
+    group_id: int,
+    db: Session = Depends(get_db)
+):
+    """Send confirmation notifications for testing purposes"""
+    try:
+        from app.services.group_formation_service import GroupFormationWorkflow
+        
+        workflow = GroupFormationWorkflow(db)
+        result = workflow.send_confirmation_notifications(group_id)
+        
+        return {
+            "message": "Confirmations sent successfully",
+            "notifications_sent": result.get('notifications_sent', 0),
+            "group_id": group_id
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{group_id}/simulate-confirmation")
+async def simulate_member_confirmation(
+    group_id: int,
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """Simulate member confirmation for testing"""
+    try:
+        from app.models.models import GroupMemberConfirmation, Interest
+        
+        confirmed = request.get('confirmed', True)
+        simulate_payment = request.get('simulate_payment', True)
+        
+        # Get first pending confirmation for this group
+        confirmation = db.query(GroupMemberConfirmation).filter(
+            GroupMemberConfirmation.group_id == group_id,
+            GroupMemberConfirmation.confirmed.is_(None)
+        ).first()
+        
+        if not confirmation:
+            raise HTTPException(status_code=404, detail="No pending confirmations found")
+        
+        # Update confirmation
+        confirmation.confirmed = confirmed
+        confirmation.confirmed_at = datetime.utcnow() if confirmed else None
+        
+        if confirmed and simulate_payment:
+            confirmation.payment_status = 'paid'
+        elif not confirmed:
+            confirmation.decline_reason = request.get('decline_reason', 'Testing decline')
+        
+        db.commit()
+        
+        action = 'confirmed' if confirmed else 'declined'
+        return {
+            "message": f"Member {action} successfully",
+            "confirmation_id": confirmation.id,
+            "payment_status": confirmation.payment_status
+        }
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

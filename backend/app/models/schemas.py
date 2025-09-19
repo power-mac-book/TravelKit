@@ -439,3 +439,80 @@ class UploadedFile(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# Clustering Schemas
+class ClusteringStatistics(BaseModel):
+    total_interests: int
+    open_interests: int
+    matched_interests: int
+    total_groups: int
+    forming_groups: int
+    confirmed_groups: int
+    clustering_efficiency: float
+
+
+class GroupSummary(BaseModel):
+    id: int
+    name: str
+    destination_name: str
+    current_size: int
+    status: str
+    final_price: float
+    savings: float
+    created_at: str
+
+
+class ClusteringResult(BaseModel):
+    message: str
+    destination_id: Optional[int] = None
+    triggered_by: str
+
+
+class GroupMember(BaseModel):
+    interest_id: int
+    user_name: str
+    user_email: str
+    num_people: int
+    date_from: str
+    date_to: str
+    budget_min: Optional[float] = None
+    budget_max: Optional[float] = None
+    special_requests: Optional[str] = None
+    created_at: str
+
+
+class GroupDetails(BaseModel):
+    id: int
+    name: str
+    destination_name: str
+    status: str
+    current_size: int
+    min_size: int
+    max_size: int
+    date_from: str
+    date_to: str
+    base_price: float
+    final_price_per_person: float
+    price_calc: dict
+    admin_notes: Optional[str] = None
+    created_at: str
+
+
+class CompatibilityAnalysis(BaseModel):
+    average_compatibility: float
+    compatibility_matrix: dict
+    group_quality: str
+
+
+class GroupAnalysis(BaseModel):
+    group: GroupDetails
+    members: List[GroupMember]
+    compatibility_analysis: CompatibilityAnalysis
+
+
+class ClusteringAnalytics(BaseModel):
+    period_days: int
+    start_date: str
+    summary: dict
+    top_destinations: List[dict]

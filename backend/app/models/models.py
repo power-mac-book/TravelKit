@@ -69,8 +69,14 @@ class Group(Base):
     base_price = Column(Float, nullable=False)
     final_price_per_person = Column(Float, nullable=False)
     price_calc = Column(JSON)  # Pricing calculation details for audit
-    status = Column(String, default="forming")  # forming, confirmed, full, cancelled
+    status = Column(String, default="forming")  # forming, pending_confirmation, confirmed, full, cancelled, merged
     admin_notes = Column(Text)
+    
+    # Group formation workflow fields
+    confirmation_deadline = Column(DateTime(timezone=True))
+    auto_confirm_enabled = Column(Boolean, default=True)
+    minimum_confirmation_rate = Column(Float, default=0.8)  # 80% of members must confirm
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -435,3 +441,174 @@ class DocumentVerificationHistory(Base):
     
     # Relationships
     verifier = relationship("Traveler")
+
+
+# ===== GROUP FORMATION WORKFLOW MODELS =====
+
+class GroupMemberConfirmation(Base):
+    __tablename__ = "group_member_confirmations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    interest_id = Column(Integer, ForeignKey("interests.id"), nullable=False)
+    traveler_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Confirmation details
+    confirmation_token = Column(String, unique=True, nullable=False, index=True)
+    confirmed = Column(Boolean, nullable=True)  # None=pending, True=confirmed, False=declined
+    confirmed_at = Column(DateTime(timezone=True))
+    status = Column(String, default="pending")  # pending, confirmed, declined, expired
+    
+    # Payment information
+    amount_due = Column(Float)
+    payment_status = Column(String, default="pending")  # pending, paid, failed, refunded, error
+    payment_intent_id = Column(String)
+    payment_transaction_id = Column(String)
+    
+    # Timing
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True))
+    reminder_sent_at = Column(DateTime(timezone=True))
+    
+    # Notes and metadata
+    confirmation_notes = Column(Text)
+    decline_reason = Column(String)
+    meta_data = Column(JSON)  # Renamed from metadata to avoid SQLAlchemy reserved word
+    
+    # Relationships
+    group = relationship("Group")
+    interest = relationship("Interest")
+    traveler = relationship("Traveler")
+
+
+class PaymentTransaction(Base):
+    __tablename__ = "payment_transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Transaction identifiers
+    transaction_id = Column(String, unique=True, nullable=False, index=True)
+    payment_intent_id = Column(String, index=True)
+    external_transaction_id = Column(String)  # From payment provider (Stripe, etc.)
+    
+    # Related entities
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True)
+    interest_id = Column(Integer, ForeignKey("interests.id"), nullable=True)
+    traveler_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    confirmation_id = Column(Integer, ForeignKey("group_member_confirmations.id"), nullable=True)
+    
+    # Payment details
+    amount = Column(Float, nullable=False)
+    currency = Column(String, default="USD")
+    status = Column(String, nullable=False)  # pending, processing, succeeded, failed, cancelled, refunded
+    payment_method = Column(String)  # card, bank_transfer, wallet, etc.
+    
+    # Timing
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    processed_at = Column(DateTime(timezone=True))
+    
+    # Provider details
+    payment_provider = Column(String, default="stripe")
+    provider_fee = Column(Float)
+    net_amount = Column(Float)
+    
+    # Failure/Error details
+    failure_code = Column(String)
+    failure_message = Column(Text)
+    
+    # Refund information
+    refunded_amount = Column(Float, default=0.0)
+    refund_reason = Column(Text)
+    refunded_at = Column(DateTime(timezone=True))
+    
+    # Metadata and audit
+    meta_data = Column(JSON)  # Renamed from metadata to avoid SQLAlchemy reserved word
+    audit_log = Column(JSON)
+    
+    # Relationships
+    group = relationship("Group")
+    interest = relationship("Interest")
+    traveler = relationship("Traveler")
+    confirmation = relationship("GroupMemberConfirmation")
+
+
+class GroupLifecycleEvent(Base):
+    __tablename__ = "group_lifecycle_events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    
+    # Event details
+    event_type = Column(String, nullable=False)  # created, member_added, member_confirmed, confirmed, cancelled, etc.
+    event_status = Column(String, default="completed")  # pending, completed, failed
+    
+    # Event data
+    previous_status = Column(String)
+    new_status = Column(String)
+    triggered_by = Column(String)  # system, admin, user
+    triggered_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Event context
+    event_data = Column(JSON)  # Flexible data storage for event-specific information
+    event_description = Column(Text)
+    
+    # Timing
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    processed_at = Column(DateTime(timezone=True))
+    
+    # Relationships
+    group = relationship("Group")
+    triggered_by_user = relationship("Traveler")
+
+
+class TripCoordination(Base):
+    __tablename__ = "trip_coordinations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False, unique=True)
+    
+    # Coordinator assignment
+    coordinator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    coordinator_assigned_at = Column(DateTime(timezone=True))
+    
+    # Trip planning status
+    itinerary_status = Column(String, default="not_started")  # not_started, in_progress, completed, approved
+    accommodation_status = Column(String, default="not_started")
+    transport_status = Column(String, default="not_started")
+    activities_status = Column(String, default="not_started")
+    
+    # Key dates and milestones
+    planning_deadline = Column(DateTime(timezone=True))
+    final_itinerary_shared_at = Column(DateTime(timezone=True))
+    trip_start_date = Column(DateTime(timezone=True))
+    trip_end_date = Column(DateTime(timezone=True))
+    
+    # Communication
+    group_chat_created = Column(Boolean, default=False)
+    group_chat_link = Column(String)
+    welcome_package_sent = Column(Boolean, default=False)
+    
+    # Documentation and files
+    itinerary_document_url = Column(String)
+    booking_confirmations = Column(JSON)  # Array of booking confirmation details
+    emergency_contacts = Column(JSON)
+    
+    # Trip execution tracking
+    trip_status = Column(String, default="planned")  # planned, in_progress, completed, cancelled
+    check_in_data = Column(JSON)  # Check-ins from travelers during trip
+    
+    # Post-trip
+    feedback_collected = Column(Boolean, default=False)
+    trip_rating = Column(Float)
+    completion_notes = Column(Text)
+    
+    # Metadata
+    coordination_notes = Column(Text)
+    special_requirements = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    group = relationship("Group")
+    coordinator = relationship("Traveler")
