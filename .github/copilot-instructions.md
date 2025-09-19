@@ -19,12 +19,45 @@ Modern website with destination discovery and interest expression:
 - Interest-based calendar view (heatmap showing interest counts)
 - Homepage messaging area for social proof banners and CTAs
 - Destination detail pages showing "X people interested" and upcoming grouped trips
+- **Personal Dashboard**: Overview with travel stats and quick actions
+- **Document Management**: Upload and view personal travel documents
+- **Interest Tracking**: Monitor travel interests and group matches
+- **Profile Management**: Update personal information and preferences
+
+**Traveler Navigation Structure:**
+- Dashboard: Personal overview with stats and quick actions
+- Documents: Upload personal documents and view admin-uploaded files
+- My Interests: Track submitted interests and group matches
+- Profile: Manage personal information and travel preferences
+- Integrated sidebar navigation for easy access between sections
 
 ### Frontend — Admin UI
 Administrative interface for content and analytics:
 - CMS to create/edit destinations, itineraries, galleries
 - Analytics dashboard (interest trends, conversion funnels, group matches)
 - Manual override for group pricing, confirm groups, notify travelers
+- **Document Management System**: Upload and manage documents for travelers
+- Traveler management with verification status tracking
+- Enhanced Social Proof configuration and A/B testing interface
+
+**Admin Navigation Structure:**
+- Dashboard: Overview with stats and quick actions
+- Destinations: Create/edit destinations with itinerary management
+- Interests: View and manage traveler interests
+- Groups: Monitor group formation and status
+- Travelers: Manage traveler accounts and verification
+- **Documents**: Upload/manage documents for specific travelers
+- Pages: Content management for static pages
+- Analytics: Detailed reporting and metrics
+- Enhanced Social Proof: A/B testing and social proof configuration
+
+**Document Upload Features:**
+- Search travelers by name/email
+- Multi-file upload with progress tracking
+- Document categories: passport, visa, tickets, insurance, hotel bookings
+- Metadata capture: travel dates, vendor info, booking references, costs
+- Real-time notifications to travelers when documents are uploaded
+- Secure file serving with access controls
 
 ### Backend API (FastAPI)
 Core REST API handling:
@@ -59,7 +92,33 @@ Microservice for interest clustering:
 
 ## Core Feature Flows
 
-### 1. Social Proof Interest Display (Traveler-Facing)
+### 1. Admin Document Management for Travelers
+Admin users can upload and manage documents for specific travelers through a dedicated interface:
+
+**Admin Document Upload Flow:**
+- Access via sidebar navigation: Admin Dashboard → Documents
+- Or via quick action button: "Traveler Documents" 
+- Search and select traveler by name/email
+- Upload multiple files with metadata (document type, travel dates, vendor info, costs)
+- Support for various document types: passport, visa, tickets, insurance, hotel bookings
+- Real-time upload progress and error handling
+- Document management with filtering and viewing capabilities
+
+**API Endpoints:**
+- `POST /api/v1/travelers/admin/travel-documents/upload` - Admin uploads for travelers
+- `GET /api/v1/travelers/admin/travel-documents` - List all documents
+- `GET /api/v1/travelers/documents` - Traveler's own documents
+- `POST /api/v1/travelers/documents/upload` - Traveler self-upload
+- `POST /api/v1/travelers/passengers/documents/upload` - Fellow passenger documents
+
+**UI Components:**
+- `/admin/documents` - Main document management interface
+- Traveler selection with search functionality
+- Multi-file upload with progress tracking
+- Document categorization and metadata forms
+- Admin sidebar navigation integration
+
+### 2. Social Proof Interest Display (Traveler-Facing)
 When interest is posted (`POST /api/interests`):
 - Persist to PostgreSQL
 - Increment Redis counters: `INCR interest_count:destination:{id}:YYYY-MM-DD`
@@ -267,23 +326,41 @@ interface AnalyticsEvent {
 
 ### Implementation Files Structure
 ```
-src/
-├── lib/
-│   ├── seo.ts              # SEO utilities and meta generators
-│   ├── analytics.ts        # Event tracking utilities
-│   └── schema.ts           # Structured data generators
+frontend/src/
+├── app/
+│   ├── admin/
+│   │   ├── page.tsx                    # Admin dashboard with quick actions
+│   │   ├── destinations/               # Destination management
+│   │   ├── travelers/                  # Traveler management
+│   │   ├── documents/                  # Document upload & management
+│   │   │   └── page.tsx               # Main document interface
+│   │   ├── enhanced-socialproof/       # A/B testing interface
+│   │   ├── interests/                  # Interest management
+│   │   ├── analytics/                  # Analytics dashboard
+│   │   └── pages/                     # Content management
+│   └── traveler/
+│       └── documents/
+│           └── page.tsx               # Traveler document view
 ├── components/
-│   ├── SEO/
-│   │   ├── MetaTags.tsx    # Reusable meta component
-│   │   └── StructuredData.tsx
-│   └── Analytics/
-│       └── EventTracker.tsx
-├── hooks/
-│   ├── useAnalytics.ts     # Analytics event hook
-│   └── useSEO.ts          # SEO data hook
-└── pages/
-    ├── sitemap.xml.ts      # Dynamic sitemap
-    └── robots.txt.ts       # Robots configuration
+│   ├── AdminLayout.tsx                # Shared admin navigation
+│   ├── DocumentUpload.tsx             # Reusable upload component
+│   └── enhanced-social-proof/         # Social proof components
+├── contexts/
+│   ├── AuthContext.tsx               # Authentication management
+│   └── TravelerContext.tsx           # Traveler state management
+└── lib/
+    ├── seo.ts                        # SEO utilities
+    ├── analytics.ts                  # Event tracking
+    └── schema.ts                     # Structured data
+
+backend/app/
+├── api/v1/endpoints/
+│   ├── travelers.py                  # Document upload endpoints
+│   └── files.py                     # File serving endpoints
+├── services/
+│   └── traveler_document_service.py  # Document business logic
+└── models/
+    └── models.py                    # Database models
 ```
 
 ### Third-Party Integration Guidelines
@@ -324,6 +401,61 @@ All Node.js packages use latest compatible versions in `frontend/package.json`:
 - **ESLint**: Compatible versions maintained for Next.js integration
 
 ## AI Agent Guidance
+
+### Document Management Access Guide
+
+**For Admin Users:**
+1. **Primary Access**: Use sidebar navigation "Documents" (📁 icon)
+2. **Quick Access**: Dashboard → "Traveler Documents" quick action button
+3. **Direct URL**: Navigate to `/admin/documents`
+
+**Features Available:**
+- Search and select travelers by name/email
+- Upload multiple documents simultaneously
+- Document categories: passport, visa, tickets, insurance, hotel bookings
+- Metadata management: travel dates, vendor information, costs, booking references
+- Document viewing and management with filtering options
+- Real-time upload progress tracking
+- Secure file access controls
+
+**For Travelers:**
+- **Primary Access**: Use sidebar navigation "Documents" (📁 icon)
+- **Quick Access**: Dashboard → "Manage Documents" button
+- **Direct URL**: Navigate to `/traveler/documents`
+- Access personal documents uploaded by themselves or admin
+- Upload own documents and passenger documents
+- Secure document sharing within groups
+- Document categories: passport, visa, tickets, insurance, hotel bookings
+- Real-time upload progress and status tracking
+
+## Production Deployment Checklist
+
+### Image Optimization Configuration
+**IMPORTANT**: Before production deployment, update image handling for optimal performance:
+
+1. **Remove localhost-specific unoptimized settings**:
+   - Current: `unoptimized={imageUrl.includes('localhost')}` (development only)
+   - Production: Remove `unoptimized` prop to enable full Next.js optimization
+
+2. **Image serving strategy**:
+   - **Development**: Thumbnail usage + unoptimized for localhost URLs (necessary for Docker environment)
+   - **Production**: Thumbnail usage + Full Next.js optimization (best performance)
+
+3. **Performance impact**:
+   - Thumbnails reduce bandwidth by 85-90%
+   - Next.js optimization adds WebP/AVIF conversion and responsive sizing
+   - Combined approach provides optimal user experience
+
+### Files to update for production:
+- `src/components/DestinationCard.tsx` - Remove localhost unoptimized condition
+- `src/app/destinations/[id]/page.tsx` - Remove localhost unoptimized condition for hero and gallery images
+
+### Current Implementation Status:
+- ✅ Thumbnail generation (backend)
+- ✅ Thumbnail usage in cards
+- ✅ Fallback to original images
+- ✅ Development-friendly configuration
+- ⏳ Production optimization (pending deployment)
 
 ## Copilot Suggest-Only Mode
 **Important:** Copilot agents should operate in "suggest-only" mode for this project. Agents must provide suggestions and code samples, but should NOT make direct changes to files or the codebase.

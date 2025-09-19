@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import AdminLayout from '../../../components/AdminLayout';
 import { 
   Upload, 
   User, 
@@ -244,25 +245,12 @@ export default function AdminDocumentManagement() {
   const selectedTravelerData = travelers?.find(t => t.id === selectedTraveler);
 
   return (
-    <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
-        <Link href="/admin" className="flex items-center hover:text-blue-600 transition-colors">
-          <Home className="h-4 w-4 mr-1" />
-          Admin Dashboard
-        </Link>
-        <span className="text-gray-400">/</span>
-        <span className="text-gray-900 font-medium">Document Management</span>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-4">
-          <Link href="/admin" className="flex items-center text-gray-600 hover:text-blue-600 transition-colors">
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Dashboard
-          </Link>
-        </div>
+    <AdminLayout>
+      <div className="p-6">
+      {/* Page Header */}
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Document Management</h1>
+        <p className="text-gray-600 mt-1">Upload and manage documents for travelers</p>
       </div>
 
       {/* Tab Navigation */}
@@ -690,6 +678,7 @@ export default function AdminDocumentManagement() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

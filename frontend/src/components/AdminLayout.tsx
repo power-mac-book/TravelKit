@@ -17,6 +17,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Interests', href: '/admin/interests', icon: '💌' },
     { name: 'Groups', href: '/admin/groups', icon: '👥' },
     { name: 'Travelers', href: '/admin/travelers', icon: '🧳' },
+    { name: 'Documents', href: '/admin/documents', icon: '📁' },
     { name: 'Pages', href: '/admin/pages', icon: '📄' },
     { name: 'Analytics', href: '/admin/analytics', icon: '📈' },
   ]

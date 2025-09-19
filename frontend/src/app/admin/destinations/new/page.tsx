@@ -16,6 +16,15 @@ interface UploadedImage {
   uploaded_at: string
 }
 
+interface ItineraryDay {
+  day: number
+  title: string
+  description: string
+  activities: string[]
+  accommodation?: string
+  meals?: string[]
+}
+
 interface DestinationForm {
   name: string
   slug: string
@@ -27,7 +36,7 @@ interface DestinationForm {
   discount_per_member: number
   image_url: string
   gallery: string[]
-  itinerary: any
+  itinerary: ItineraryDay[]
   is_active: boolean
 }
 
@@ -48,7 +57,7 @@ export default function NewDestination() {
     discount_per_member: 0.03,
     image_url: '',
     gallery: [],
-    itinerary: {},
+    itinerary: [],
     is_active: true
   })
 
@@ -111,24 +120,141 @@ export default function NewDestination() {
     setUploadError(error)
   }
 
+  // Itinerary management functions
+  const addItineraryDay = () => {
+    const newDay: ItineraryDay = {
+      day: form.itinerary.length + 1,
+      title: '',
+      description: '',
+      activities: [''],
+      accommodation: '',
+      meals: ['']
+    }
+    setForm(prev => ({
+      ...prev,
+      itinerary: [...prev.itinerary, newDay]
+    }))
+  }
+
+  const updateItineraryDay = (index: number, field: keyof ItineraryDay, value: any) => {
+    setForm(prev => ({
+      ...prev,
+      itinerary: prev.itinerary.map((day, i) => 
+        i === index ? { ...day, [field]: value } : day
+      )
+    }))
+  }
+
+  const removeItineraryDay = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      itinerary: prev.itinerary.filter((_, i) => i !== index).map((day, i) => ({
+        ...day,
+        day: i + 1
+      }))
+    }))
+  }
+
+  const addActivity = (dayIndex: number) => {
+    const updatedActivities = [...form.itinerary[dayIndex].activities, '']
+    updateItineraryDay(dayIndex, 'activities', updatedActivities)
+  }
+
+  const updateActivity = (dayIndex: number, activityIndex: number, value: string) => {
+    const updatedActivities = form.itinerary[dayIndex].activities.map((activity, i) =>
+      i === activityIndex ? value : activity
+    )
+    updateItineraryDay(dayIndex, 'activities', updatedActivities)
+  }
+
+  const removeActivity = (dayIndex: number, activityIndex: number) => {
+    const updatedActivities = form.itinerary[dayIndex].activities.filter((_, i) => i !== activityIndex)
+    updateItineraryDay(dayIndex, 'activities', updatedActivities)
+  }
+
+  const addMeal = (dayIndex: number) => {
+    const currentMeals = form.itinerary[dayIndex].meals || []
+    const updatedMeals = [...currentMeals, '']
+    updateItineraryDay(dayIndex, 'meals', updatedMeals)
+  }
+
+  const updateMeal = (dayIndex: number, mealIndex: number, value: string) => {
+    const currentMeals = form.itinerary[dayIndex].meals || []
+    const updatedMeals = currentMeals.map((meal, i) =>
+      i === mealIndex ? value : meal
+    )
+    updateItineraryDay(dayIndex, 'meals', updatedMeals)
+  }
+
+  const removeMeal = (dayIndex: number, mealIndex: number) => {
+    const currentMeals = form.itinerary[dayIndex].meals || []
+    const updatedMeals = currentMeals.filter((_, i) => i !== mealIndex)
+    updateItineraryDay(dayIndex, 'meals', updatedMeals)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
+      // Validate required fields before submission
+      if (!form.name || !form.slug || !form.location || !form.country || form.base_price <= 0) {
+        throw new Error('Please fill in all required fields (name, slug, location, country, and base price must be greater than 0)')
+      }
+
+      // Transform the form data to match backend expectations
+      const submitData = {
+        ...form,
+        // Ensure base_price is a valid number
+        base_price: Number(form.base_price),
+        max_discount: Number(form.max_discount),
+        discount_per_member: Number(form.discount_per_member),
+        // Convert itinerary array to object with days as keys for backend compatibility
+        itinerary: form.itinerary.length > 0 ? form.itinerary.reduce((acc, day) => {
+          acc[`day_${day.day}`] = day;
+          return acc;
+        }, {} as Record<string, any>) : null
+      };
+
+      console.log('Submitting destination data:', submitData)
+      console.log('Using token:', token)
+      console.log('API URL:', 'http://localhost:8000/api/v1/destinations/')
+
       const response = await fetch('http://localhost:8000/api/v1/destinations/', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(submitData),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to create destination')
+        let errorMessage = 'Failed to create destination'
+        try {
+          const errorData = await response.json()
+          console.error('Backend error response:', errorData)
+          
+          // Handle validation errors specifically
+          if (response.status === 422 && errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              // Pydantic validation errors
+              const errors = errorData.detail.map((err: any) => 
+                `${err.loc?.join(' -> ') || 'Field'}: ${err.msg}`
+              ).join('; ')
+              errorMessage = `Validation errors: ${errors}`
+            } else {
+              errorMessage = errorData.detail
+            }
+          } else {
+            errorMessage = errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`
+          }
+        } catch (jsonError) {
+          console.error('Error parsing error response:', jsonError)
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+        throw new Error(errorMessage)
       }
 
       setSuccess(true)
@@ -405,19 +531,160 @@ export default function NewDestination() {
             </div>
           </div>
 
+          {/* Itinerary */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
+              <button
+                type="button"
+                onClick={addItineraryDay}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Add Day
+              </button>
+            </div>
+
+            {form.itinerary.map((day, dayIndex) => (
+              <div key={dayIndex} className="border border-gray-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-md font-semibold text-gray-800">Day {day.day}</h3>
+                  <button
+                    type="button"
+                    onClick={() => removeItineraryDay(dayIndex)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    Remove Day
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Day Title
+                    </label>
+                    <input
+                      type="text"
+                      value={day.title}
+                      onChange={(e) => updateItineraryDay(dayIndex, 'title', e.target.value)}
+                      placeholder="e.g., Arrival and Beach Time"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={day.description}
+                      onChange={(e) => updateItineraryDay(dayIndex, 'description', e.target.value)}
+                      rows={3}
+                      placeholder="Describe what happens on this day..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Activities
+                    </label>
+                    {day.activities.map((activity, activityIndex) => (
+                      <div key={activityIndex} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={activity}
+                          onChange={(e) => updateActivity(dayIndex, activityIndex, e.target.value)}
+                          placeholder="Activity description"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeActivity(dayIndex, activityIndex)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addActivity(dayIndex)}
+                      className="text-indigo-600 hover:text-indigo-800 text-sm"
+                    >
+                      + Add Activity
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Accommodation
+                    </label>
+                    <input
+                      type="text"
+                      value={day.accommodation || ''}
+                      onChange={(e) => updateItineraryDay(dayIndex, 'accommodation', e.target.value)}
+                      placeholder="Hotel/accommodation details"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meals
+                    </label>
+                    {(day.meals || []).map((meal, mealIndex) => (
+                      <div key={mealIndex} className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="text"
+                          value={meal}
+                          onChange={(e) => updateMeal(dayIndex, mealIndex, e.target.value)}
+                          placeholder="Meal description"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeMeal(dayIndex, mealIndex)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addMeal(dayIndex)}
+                      className="text-indigo-600 hover:text-indigo-800 text-sm"
+                    >
+                      + Add Meal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {form.itinerary.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p>No itinerary days added yet.</p>
+                <p className="text-sm">Click "Add Day" to start building the itinerary.</p>
+              </div>
+            )}
+          </div>
+
           {/* Status */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="is_active"
-              name="is_active"
-              checked={form.is_active}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="is_active"
+                name="is_active"
+                checked={form.is_active}
               onChange={handleInputChange}
               className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             />
             <label htmlFor="is_active" className="ml-2 text-sm text-gray-700">
               Active (visible to users)
             </label>
+          </div>
           </div>
 
           {/* Submit */}

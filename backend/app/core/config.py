@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379"
     
     # CORS
-    ALLOWED_HOSTS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:8000"]
+    ALLOWED_HOSTS: List[str] = ["*"]  # Temporarily allow all origins for debugging
     
     # External Services
     SENDGRID_API_KEY: str = ""

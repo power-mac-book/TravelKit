@@ -302,8 +302,9 @@ export default function AdminDashboard() {
                 className="p-4 border border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
               >
                 <div className="text-center">
-                  <span className="text-2xl">📋</span>
-                  <p className="mt-2 text-sm font-medium text-gray-900">Document Upload</p>
+                  <span className="text-2xl">�</span>
+                  <p className="mt-2 text-sm font-medium text-gray-900">Traveler Documents</p>
+                  <p className="text-xs text-gray-500">Upload for travelers</p>
                 </div>
               </button>
               

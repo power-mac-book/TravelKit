@@ -116,6 +116,15 @@ export function LiveActivityFeed() {
 
   const fetchActivity = async () => {
     try {
+      // Try enhanced API first, fallback to original
+      const enhancedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/enhanced-socialproof/activity?hours=6`)
+      if (enhancedResponse.ok) {
+        const data = await enhancedResponse.json()
+        setActivity(data)
+        return
+      }
+      
+      // Fallback to original API
       const response = await fetch('http://localhost:8000/api/v1/socialproof/activity?hours=6')
       if (response.ok) {
         const data = await response.json()
@@ -241,6 +250,15 @@ export function TrendingDestinations() {
 
   const fetchTrending = async () => {
     try {
+      // Try enhanced API first, fallback to original
+      const enhancedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/enhanced-socialproof/trending?limit=3`)
+      if (enhancedResponse.ok) {
+        const data = await enhancedResponse.json()
+        setTrending(data.destinations || [])
+        return
+      }
+      
+      // Fallback to original API
       const response = await fetch('http://localhost:8000/api/v1/socialproof/trending?limit=3')
       if (response.ok) {
         const data = await response.json()
@@ -355,6 +373,15 @@ export function SmartSocialProofBanner() {
 
   const fetchSmartMessages = async () => {
     try {
+      // Try enhanced API first, fallback to original
+      const enhancedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/enhanced-socialproof/smart-messages`)
+      if (enhancedResponse.ok) {
+        const data = await enhancedResponse.json()
+        setMessages(data.messages || [])
+        return
+      }
+      
+      // Fallback to original API
       const response = await fetch('http://localhost:8000/api/v1/socialproof/smart-messages')
       if (response.ok) {
         const data = await response.json()
@@ -445,6 +472,21 @@ export function InterestCounter({ destinationId, inline = false }: { destination
 
   const fetchSocialProof = async () => {
     try {
+      // Try enhanced API first with personalized social proof
+      const enhancedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/enhanced-socialproof/social-proof/${destinationId}?variant=social_focused&user_segment=first_time_visitor`)
+      if (enhancedResponse.ok) {
+        const data = await enhancedResponse.json()
+        // Transform enhanced response to match original format
+        setSocialProof({
+          total_interested_last_30_days: data.metrics?.interests_7d || 0,
+          next_30_day_count: data.metrics?.interests_24h || 0,
+          recent_names_sample: ['User1', 'User2', 'User3'], // Enhanced API doesn't expose names for privacy
+          social_proof_text: data.message?.text || 'People are interested in this destination'
+        })
+        return
+      }
+      
+      // Fallback to original API
       const response = await fetch(`http://localhost:8000/api/v1/socialproof/destination/${destinationId}`)
       if (response.ok) {
         const data = await response.json()

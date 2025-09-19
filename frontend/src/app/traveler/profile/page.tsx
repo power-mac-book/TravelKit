@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTraveler } from '@/contexts/TravelerContext';
+import TravelerLayout from '@/components/TravelerLayout';
 import toast from 'react-hot-toast';
 import { User, Save, Edit, Calendar, Phone, Mail, MapPin, Heart, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -136,28 +137,8 @@ export default function TravelerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">TravelKit</h1>
-              <span className="ml-2 text-sm text-gray-500">Profile</span>
-            </div>
-            <nav className="flex space-x-4">
-              <a href="/traveler/dashboard" className="text-gray-600 hover:text-blue-600">
-                Dashboard
-              </a>
-              <a href="/traveler/documents" className="text-gray-600 hover:text-blue-600">
-                Documents
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <TravelerLayout>
+      <div className="p-6">
         {/* Profile Header */}
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -421,6 +402,6 @@ export default function TravelerProfile() {
           </div>
         </form>
       </div>
-    </div>
+    </TravelerLayout>
   );
 }

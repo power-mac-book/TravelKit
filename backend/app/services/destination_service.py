@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import redis
 from app.models.models import Destination, Interest
@@ -141,14 +142,27 @@ class DestinationService:
 
     async def create_destination(self, destination_data: schemas.DestinationCreate) -> schemas.Destination:
         """Create new destination"""
-        destination = Destination(**destination_data.dict())
-        self.db.add(destination)
-        self.db.commit()
-        self.db.refresh(destination)
-        
-        dest_dict = destination.__dict__.copy()
-        dest_dict['interest_summary'] = await self._get_interest_summary(destination.id)
-        return schemas.Destination(**dest_dict)
+        destination = None
+        try:
+            destination = Destination(**destination_data.dict())
+            self.db.add(destination)
+            self.db.commit()
+            self.db.refresh(destination)
+            
+            dest_dict = destination.__dict__.copy()
+            dest_dict['interest_summary'] = await self._get_interest_summary(destination.id)
+            return schemas.Destination(**dest_dict)
+        except IntegrityError as e:
+            self.db.rollback()
+            # Get slug from either destination object or original data
+            slug = destination.slug if destination else destination_data.slug
+            if "ix_destinations_slug" in str(e):
+                raise ValueError(f"A destination with slug '{slug}' already exists. Please use a different name or modify the slug.")
+            else:
+                raise ValueError(f"Database constraint violation: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     async def update_destination(self, destination_id: int, destination_update: schemas.DestinationUpdate) -> Optional[schemas.Destination]:
         """Update destination"""

@@ -106,6 +106,7 @@ export default function DestinationDetailPage() {
             alt={destination.name}
             fill
             className="object-cover"
+            unoptimized={destination.image_url.includes('localhost')}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary-200 to-primary-400 flex items-center justify-center">
@@ -179,13 +180,111 @@ export default function DestinationDetailPage() {
             {destination.itinerary && (
               <div className="bg-white rounded-xl shadow-sm p-6 border">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Itinerary</h2>
-                <div className="space-y-4">
-                  {Object.entries(destination.itinerary).map(([day, activities]) => (
-                    <div key={day} className="border-l-4 border-primary-200 pl-4">
-                      <h3 className="font-medium text-gray-900 capitalize">{day}</h3>
-                      <p className="text-gray-600 text-sm">{activities as string}</p>
-                    </div>
-                  ))}
+                <div className="space-y-6">
+                  {(() => {
+                    try {
+                      // Handle array format (from admin forms)
+                      if (Array.isArray(destination.itinerary)) {
+                        return destination.itinerary.map((dayData: any, index: number) => (
+                          <div key={index} className="border-l-4 border-primary-200 pl-4">
+                            <div className="flex items-center mb-2">
+                              <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded text-sm font-medium">
+                                Day {dayData.day || index + 1}
+                              </span>
+                            </div>
+                            {dayData.title && (
+                              <h3 className="font-semibold text-gray-900 mb-2">{dayData.title}</h3>
+                            )}
+                            {dayData.description && (
+                              <p className="text-gray-600 mb-3">{dayData.description}</p>
+                            )}
+                            {dayData.activities && Array.isArray(dayData.activities) && dayData.activities.length > 0 && (
+                              <div className="mb-3">
+                                <h4 className="font-medium text-gray-700 mb-1">Activities:</h4>
+                                <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
+                                  {dayData.activities.map((activity: string, actIndex: number) => (
+                                    <li key={actIndex}>{activity}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {dayData.accommodation && (
+                              <div className="mb-2">
+                                <span className="font-medium text-gray-700">Accommodation: </span>
+                                <span className="text-gray-600">{dayData.accommodation}</span>
+                              </div>
+                            )}
+                            {dayData.meals && Array.isArray(dayData.meals) && dayData.meals.length > 0 && (
+                              <div>
+                                <span className="font-medium text-gray-700">Meals: </span>
+                                <span className="text-gray-600">{dayData.meals.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        ));
+                      }
+                      
+                      // Handle object format (key-value pairs)
+                      return Object.entries(destination.itinerary).map(([dayKey, dayData]) => {
+                        // Handle both old string format and new object format
+                        if (typeof dayData === 'string') {
+                          return (
+                            <div key={dayKey} className="border-l-4 border-primary-200 pl-4">
+                              <h3 className="font-medium text-gray-900 capitalize">{dayKey}</h3>
+                              <p className="text-gray-600 text-sm">{dayData}</p>
+                            </div>
+                          );
+                        }
+                        
+                        // Handle new object format
+                        const day = dayData as any;
+                        return (
+                          <div key={dayKey} className="border-l-4 border-primary-200 pl-4">
+                            <div className="flex items-center mb-2">
+                              <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded text-sm font-medium">
+                                Day {day.day || dayKey.replace('day_', '')}
+                              </span>
+                            </div>
+                            {day.title && (
+                              <h3 className="font-semibold text-gray-900 mb-2">{day.title}</h3>
+                            )}
+                            {day.description && (
+                              <p className="text-gray-600 mb-3">{day.description}</p>
+                            )}
+                            {day.activities && Array.isArray(day.activities) && day.activities.length > 0 && (
+                              <div className="mb-3">
+                                <h4 className="font-medium text-gray-700 mb-1">Activities:</h4>
+                                <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
+                                  {day.activities.map((activity: string, index: number) => (
+                                    <li key={index}>{activity}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {day.accommodation && (
+                              <div className="mb-2">
+                                <span className="font-medium text-gray-700">Accommodation: </span>
+                                <span className="text-gray-600">{day.accommodation}</span>
+                              </div>
+                            )}
+                            {day.meals && Array.isArray(day.meals) && day.meals.length > 0 && (
+                              <div>
+                                <span className="font-medium text-gray-700">Meals: </span>
+                                <span className="text-gray-600">{day.meals.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    } catch (error) {
+                      console.error('Error rendering itinerary:', error, destination.itinerary);
+                      return (
+                        <div className="text-red-600 text-sm">
+                          Error displaying itinerary. Please contact support.
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
             )}
@@ -202,6 +301,7 @@ export default function DestinationDetailPage() {
                         alt={`${destination.name} gallery ${index + 1}`}
                         fill
                         className="object-cover hover:scale-105 transition-transform duration-300"
+                        unoptimized={imageUrl.includes('localhost')}
                       />
                     </div>
                   ))}

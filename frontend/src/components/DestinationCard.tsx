@@ -14,17 +14,34 @@ export default function DestinationCard({ destination }: DestinationCardProps) {
   // Calculate potential discount
   const maxSavings = Math.round(destination.base_price * destination.max_discount);
 
+  // Use thumbnail for better performance in cards
+  const cardImageUrl = destination.image_url ? 
+    destination.image_url.replace('/static/uploads/', '/static/uploads/thumbnails/thumb_') : 
+    null;
+
   return (
     <Link href={`/destinations/${destination.id}`}>
       <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100 group cursor-pointer">
         {/* Image */}
         <div className="relative h-48 overflow-hidden">
-          {destination.image_url ? (
+          {cardImageUrl ? (
             <Image
-              src={destination.image_url}
+              src={cardImageUrl}
               alt={destination.name}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
+              unoptimized={cardImageUrl.includes('localhost')}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onError={(e) => {
+                console.error('Thumbnail failed to load, falling back to original:', cardImageUrl);
+                // Fallback to original image if thumbnail fails
+                if (destination.image_url) {
+                  (e.target as HTMLImageElement).src = destination.image_url;
+                }
+              }}
+              onLoad={() => {
+                console.log('Thumbnail loaded successfully');
+              }}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
